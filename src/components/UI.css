@@ -1,0 +1,228 @@
+.ui-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  background: linear-gradient(180deg, rgba(10, 10, 26, 0.9) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.ui-top > * {
+  pointer-events: auto;
+}
+
+.ui-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.logo-name {
+  color: #00ff88;
+}
+
+.logo-title {
+  color: #aaa;
+  font-weight: 400;
+}
+
+.ui-nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.ui-nav button,
+.resume-link {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  font-family: inherit;
+}
+
+.ui-nav button:hover,
+.resume-link:hover {
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+}
+
+.menu-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.menu-toggle span {
+  width: 25px;
+  height: 2px;
+  background: #fff;
+  transition: all 0.3s ease;
+}
+
+.ui-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  background: linear-gradient(0deg, rgba(10, 10, 26, 0.9) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.ui-bottom > * {
+  pointer-events: auto;
+}
+
+.ui-controls-left {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.play-pause-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.2);
+  border: 2px solid #00ff88;
+  color: #00ff88;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.play-pause-btn:hover {
+  background: rgba(0, 255, 136, 0.3);
+  transform: scale(1.1);
+}
+
+.speed-controls {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.speed-controls button {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #aaa;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.speed-controls button:hover {
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.speed-controls button.active {
+  background: #00ff88;
+  color: #000;
+  border-color: #00ff88;
+}
+
+.ui-controls-right {
+  display: flex;
+  align-items: center;
+}
+
+.quality-toggle {
+  padding: 0.5rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #aaa;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.quality-toggle:hover {
+  border-color: #00ff88;
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+}
+
+@media (max-width: 768px) {
+  .ui-top {
+    padding: 1rem;
+  }
+
+  .ui-logo {
+    font-size: 0.9rem;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .ui-nav {
+    position: fixed;
+    top: 70px;
+    right: 1rem;
+    flex-direction: column;
+    background: rgba(10, 10, 26, 0.95);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: all 0.3s ease;
+    gap: 0.5rem;
+  }
+
+  .ui-nav.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .ui-bottom {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .ui-controls-left {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ui-controls-right {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

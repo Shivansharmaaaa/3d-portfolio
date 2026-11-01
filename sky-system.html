@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sky System - Day/Night Cycle</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #000;
+    }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 8px;
+      z-index: 100;
+      max-width: 350px;
+    }
+    #info h2 {
+      margin-bottom: 10px;
+      color: #ffcc44;
+    }
+    #info p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    #timeDisplay {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      font-weight: bold;
+      color: #ffcc44;
+    }
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: 2px solid #ffcc44;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: rgba(255, 204, 68, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h2>Sky System - Day/Night Cycle</h2>
+    <p>Use mouse to orbit camera</p>
+    <p>Drag to rotate view | Scroll to zoom</p>
+    <div id="timeDisplay">Time: 00:00</div>
+  </div>
+  
+  <div id="controls">
+    <button id="resetCamera">Reset Camera</button>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+
+    // --- SCENE SETUP ---
+    const scene = new THREE.Scene();
+    scene.background = null; // Let sky shader show through
+
+    // --- CAMERA SETUP ---
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100000
+    );
+    camera.position.set(0, 50, 200);
+
+    // --- RENDERER SETUP ---
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    // --- SKY SETUP ---
+
+    // Create a giant sky sphere
+    const skyGeometry = new THREE.SphereGeometry(30000, 32, 32);
+
+    const skyMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        topColor:       { value: new THREE.Color() },
+        bottomColor:    { value: new THREE.Color() },
+        starIntensity:  { value: 0.0 },
+      },
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vWorldPosition;
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        uniform float starIntensity;
+
+        float rand(vec2 co){
+          return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453123);
+        }
+
+        void main() {
+          vec3 dir = normalize(vWorldPosition);
+          float h = clamp((dir.y + 1.0) * 0.5, 0.0, 1.0);
+
+          vec3 base = mix(bottomColor, topColor, h);
+
+          float star = step(0.997, rand(vWorldPosition.xz * 0.0004)) * starIntensity;
+
+          gl_FragColor = vec4(base + vec3(star), 1.0);
+        }
+      `,
+      side: THREE.BackSide,
+      transparent: false
+    });
+
+    const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+    sky.renderOrder = -1000;
+    scene.add(sky);
+
+
+    // --- SUN ---
+    const sun = new THREE.Mesh(
+      new THREE.SphereGeometry(120, 32, 32),
+      new THREE.MeshStandardMaterial({
+        color: 0xffcc44,
+        emissive: 0xffdd88,
+        emissiveIntensity: 3
+      })
+    );
+    scene.add(sun);
+
+    // --- MOON ---
+    const moon = new THREE.Mesh(
+      new THREE.SphereGeometry(80, 32, 32),
+      new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffffee,
+        emissiveIntensity: 1.5
+      })
+    );
+    scene.add(moon);
+
+
+    // --- UPDATE THE SKY EACH FRAME ---
+    function updateSkyLoop(camera) {
+
+      // 0 → 1 loop (full day)
+      const t = (Date.now() * 0.00003) % 1.0;
+
+      const top = skyMaterial.uniforms.topColor.value;
+      const bottom = skyMaterial.uniforms.bottomColor.value;
+      const stars = skyMaterial.uniforms.starIntensity;
+
+      // --- MORNING (0.0 → 0.25) ---
+      if (t < 0.25) {
+        const k = t / 0.25;
+        top.setRGB(0.8*k, 0.5*k, 0.2 + 0.4*k);
+        bottom.setRGB(0.9*k, 0.6*k, 0.3 + 0.3*k);
+        stars.value = 0;
+        sun.visible = true;
+        moon.visible = false;
+      }
+
+      // --- SUNSET (0.25 → 0.5) ---
+      else if (t < 0.5) {
+        const k = (t - 0.25) / 0.25;
+        top.setRGB(1.0 - 0.4*k, 0.5*(1-k), 0.2 + 0.5*k);
+        bottom.setRGB(0.9 - 0.4*k, 0.3*(1-k), 0.2 + 0.5*k);
+        stars.value = 0;
+        sun.visible = true;
+        moon.visible = false;
+      }
+
+      // --- NIGHT (0.5 → 0.75) ---
+      else if (t < 0.75) {
+        const k = (t - 0.5) / 0.25;
+        top.setRGB(0.0, 0.0, 0.4 + 0.3*k);
+        bottom.setRGB(0.0, 0.0, 0.2 + 0.3*k);
+        stars.value = k;
+        sun.visible = false;
+        moon.visible = true;
+      }
+
+      // --- MORNING AGAIN (0.75 → 1.0) ---
+      else {
+        const k = (t - 0.75) / 0.25;
+        top.setRGB(0.5*k, 0.3*k, 0.7*(1-k));
+        bottom.setRGB(0.6*k, 0.4*k, 0.5*(1-k));
+        stars.value = 1-k;
+        sun.visible = true;
+        moon.visible = false;
+      }
+
+      // Move sky with camera
+      sky.position.copy(camera.position);
+
+      // Move sun & moon relative to camera
+      sun.position.copy(camera.position).add(new THREE.Vector3(600, 800, -1200));
+      moon.position.copy(camera.position).add(new THREE.Vector3(-900, 700, 1400));
+
+      // Update time display
+      const hours = Math.floor(t * 24);
+      const minutes = Math.floor((t * 24 - hours) * 60);
+      const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      document.getElementById('timeDisplay').textContent = `Time: ${timeStr}`;
+    }
+
+    // --- ADD SOME GROUND FOR REFERENCE ---
+    const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      color: 0x333333,
+      roughness: 0.8,
+      metalness: 0.2
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
+    scene.add(ground);
+
+    // --- ADD LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(50, 100, 50);
+    scene.add(directionalLight);
+
+    // --- CAMERA CONTROLS (Simple orbit) ---
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let cameraAngleX = 0;
+    let cameraAngleY = 0;
+    let cameraDistance = 200;
+
+    function updateCameraPosition() {
+      const x = Math.sin(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
+      const y = Math.sin(cameraAngleX) * cameraDistance + 50;
+      const z = Math.cos(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
+      camera.position.set(x, y, z);
+      camera.lookAt(0, 0, 0);
+    }
+
+    renderer.domElement.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+
+    renderer.domElement.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - previousMousePosition.x;
+      const deltaY = e.clientY - previousMousePosition.y;
+      cameraAngleY += deltaX * 0.01;
+      cameraAngleX += deltaY * 0.01;
+      cameraAngleX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraAngleX));
+      updateCameraPosition();
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+
+    renderer.domElement.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    renderer.domElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      cameraDistance = Math.max(50, Math.min(500, cameraDistance - e.deltaY * 0.1));
+      updateCameraPosition();
+    });
+
+    // --- CONTROLS ---
+    document.getElementById('resetCamera').addEventListener('click', () => {
+      cameraAngleX = 0;
+      cameraAngleY = 0;
+      cameraDistance = 200;
+      updateCameraPosition();
+    });
+
+    // --- ANIMATION LOOP ---
+    function animate() {
+      requestAnimationFrame(animate);
+
+      updateSkyLoop(camera);
+
+      renderer.render(scene, camera);
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start animation
+    animate();
+    updateCameraPosition();
+  </script>
+</body>
+</html>
+
+
